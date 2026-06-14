@@ -2,8 +2,6 @@
 
 此 repo 為 [AI-Memory-Vault](https://github.com/gabrielchen0314/AI-Memory-Vault) 的公開發布頁面。
 
-主 repo（原始碼）維持 Private；安裝檔與版本資訊統一發布於此。
-
 ---
 
 ## 安裝
