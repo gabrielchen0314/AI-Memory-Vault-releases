@@ -1,75 +1,139 @@
-# AI Memory Vault — 使用指南
+# AI Memory Vault — 使用指南（安裝版）
 
-> 這份是給**下載安裝來用**的人。AI Memory Vault 是以 Markdown 為底、RAG + MCP 的個人知識/記憶庫；
-> 裝好後你的 AI 工具（Claude Code / VS Code Copilot / Codex / Antigravity）連上它，
-> 就能在對話中自動取得你的專案脈絡、規則、直覺，並讀寫這個知識庫。
+> 這份是給**下載安裝包來用**的人。
+> 想從原始碼架設 / 開發 → 見主 repo 的 `USAGE.md`。
+>
+> 本檔由 `AI_Engine/packaging/publish-update.ps1` 於每次發布時自動推送至
+> releases repo，**請勿在 releases repo 直接編輯**——那裡的版本會在下次發布時被覆蓋。
+> 要修改請改主 repo 的 `AI_Engine/packaging/release-usage.md`。
 
 ---
 
 ## 1. 安裝
 
-1. 到 [Releases](https://github.com/gabrielchen0314/AI-Memory-Vault-releases/releases/latest) 下載 `AI-Memory-Vault-Setup-vX.Y.Z.exe`
-2. 執行安裝精靈（建議保留「登入時自動啟動 MCP SSE Server」勾選）
+從 [Releases](../../releases/latest) 下載最新的 `AI-Memory-Vault-Setup-<版本>.exe`，
+執行安裝精靈。預設安裝到 `C:\Program Files\AI Memory Vault`。
 
-安裝後有三支程式：`vault-mcp.exe`（MCP Server）、`vault-scheduler.exe`（排程）、`vault-cli.exe`（互動 CLI）。
+升級時直接執行新版安裝檔即可，它會沿用你上次選的安裝目錄。
 
 ## 2. 首次設定
 
-開始選單開「環境設定」，或執行 `vault-cli.exe --setup`：
-- **Vault 路徑**：知識庫（.md 檔）要放哪
-- 使用者資訊、LLM provider（選填）
+桌面點擊 **AI Memory Vault CLI**，會自動進入設定精靈，依序問：
 
-## 3. 連接你的 AI 工具（MCP）
+1. **Vault 路徑**——知識庫要放哪（建議放在有備份的磁碟）
+2. **使用者名稱與組織**
+3. **LLM provider**——ollama（本機）／ gemini（需 API 金鑰）／ copilot
+4. **回應語言**——預設 `zh-TW`
+5. **Starter pack**——見下一節，**預設全不勾**
 
-架構：**一個常駐 SSE Server + 各 editor 用輕量 stdio bridge 連它**。SSE Server 開機自啟；
-各工具 MCP 設定**一律用 stdio 指向 `vault-mcp.exe`**（它自動橋接到共用 SSE，不重載模型）。
+隨時可以重跑：`vault-cli --setup`，或只改其中一段：`vault-cli --setup-section packs`。
 
-> ⚠️ 不要用「直連 SSE url」——直連的 client 不會自動重連，Server 重啟後要手動重連。
+設定檔在 `%APPDATA%\AI-Memory-Vault\config.json`；API 金鑰放同目錄的 `.env`。
 
-| 工具 | 設定檔 | ai-memory-vault 寫法（stdio） |
-|------|--------|------------------------------|
-| Claude Code | `~/.claude.json` | `"command": "C:/.../vault-mcp.exe"` |
-| VS Code Copilot | `%APPDATA%\Code\User\mcp.json` | `"type":"stdio","command":"C:/.../vault-mcp.exe"` |
-| Codex App | `~/.codex/config.toml` | `[mcp_servers.ai-memory-vault]` `command="C:/.../vault-mcp.exe"` |
-| Antigravity | `~/.gemini/antigravity/mcp_config.json` | `"mcpServers":{"ai-memory-vault":{"command":"C:/.../vault-mcp.exe"}}` |
+## 3. Starter pack（預設全不裝）
 
-連線成功時右下角會跳通知 `✓ vX.Y.Z 已連線，所有工具就緒`。
+v4.0.0 起，引擎只出**機制**與中性預設，**政策**（風格規範、SOP、agent 角色這類
+因人而異的東西）要你明確選才會進來。所以剛裝好的 Vault 是零政策的——
+沒有 coding style 規範、沒有 agent 角色、`--end-of-day` 會明確拒絕執行，
+而不是偷偷跑一套你沒同意的流程。
 
-## 4. 日常使用
+| Pack | 裝了之後 |
+|------|---------|
+| `coding-style` | coding-style guard 生效，各語言 style skill 可用 |
+| `agent-roles` | `dispatch_agent` 有 14 個角色可派（依賴 `coding-style`） |
+| `end-of-day` | `--end-of-day` 與收工排程可用 |
 
-裝好連上後，多數功能在**對話中自動發生**：
-- **自動脈絡**：對話開始自動注入導航、當前交接、專案脈絡。
-- **查知識 / 記東西**：叫 AI「搜尋 vault 關於 X」或「把這個決定記進 vault」。
-- **收工**：跟 AI 說「收工」→ 更新進度、精煉直覺、產每日回顧。
-- **Agent 排程任務**（見下）：把重複性工作寫成排程，由 headless CLI 定時自動跑、產出寫回 Vault。
+```powershell
+vault-cli --setup-section packs     # 互動式勾選安裝／移除
+```
 
-## 5. 排程任務（Agent Task）
+三個 pack 裝的都是作者本人的工作方式，作為可運作的範例——
+可以直接用、可以改，也可以完全不裝自己寫一套。
+**不裝也能用全部 29 個 MCP 工具**，pack 影響的是行為政策，不是功能。
 
-讓排程在指定時間用 headless CLI（claude / codex）自動跑一件事、產出寫進 Vault。
+## 4. 接上編輯器（MCP）
 
-- **建任務**：跟 AI 說要排什麼，它用 `create_agent_task` 幫你建（會驗證欄位）；或手寫
-  `<Vault>/automation/tasks/{id}.md`（frontmatter 定 cron/CLI/權限/產出 + body 寫任務指示）。
-- **前提**：SSE Server（開機自啟）要在跑；新增/改排程後**重啟 SSE**（重新登入或跑 `start-vault-sse.ps1`）才生效。
-- **必記兩點**：cron 星期用名稱 `mon-fri`（勿用數字）；需查 Redmine 等 MCP 的 codex 任務要在 frontmatter 加 `codex_full_access: true`。
-- **完整格式與細節**：裝好後在對話中 `search_vault("agent task 排程")`，或看 Vault 內 `knowledge/agent-task-scheduling.md`。
+### VS Code / Cursor
 
-內建防護：cron 最小間隔 5 分鐘、以「產出檔存在且非空」判成敗、冪等（已產出則跳過）、同時最多 1 個 agent。
+`mcp.json`：
 
-## 6. 自動更新
+```json
+{
+  "servers": {
+    "ai-memory-vault": {
+      "type": "stdio",
+      "command": "C:/Program Files/AI Memory Vault/vault-mcp.exe",
+      "args": [],
+      "cwd": "C:/Program Files/AI Memory Vault"
+    }
+  }
+}
+```
 
-- 開機偵測到新版時會**彈窗問是否更新**（15 秒未選＝否）。
-- 或在對話中叫 AI 執行 `apply_update()`；或手動下載新安裝檔覆蓋安裝。
+### Claude Desktop / Claude Code
 
-## 7. 疑難排解
+同樣指向 `vault-mcp.exe`，設定檔位置依各工具說明。
 
-| 症狀 | 處理 |
+> ⚠️ 安裝時若改過目錄，請把路徑換成實際安裝位置。
+> 多個編輯器要同時用 → 見「5. 多編輯器共用」。
+
+## 5. 多編輯器共用（SSE 常駐）
+
+同時開 VS Code + Claude Desktop + Codex 時，讓它們共用一個常駐 server，
+避免各自啟一份、彼此搶 SQLite 寫入鎖：
+
+```powershell
+"C:\Program Files\AI Memory Vault\vault-mcp.exe" --mode api    # 常駐於 :8765，含內嵌排程
+```
+
+VS Code 可以直接連 SSE：
+
+```json
+{
+  "servers": {
+    "ai-memory-vault": { "type": "sse", "url": "http://127.0.0.1:8765/sse" }
+  }
+}
+```
+
+Claude Desktop / Codex 這類只講 stdio 的客戶端**不用改設定**——
+`vault-mcp.exe` 會自己判斷：
+
+| 狀況 | 行為 |
 |------|------|
-| 開 editor 沒自動連 / 連不上 | MCP 設定要用 **stdio 指向 vault-mcp.exe**（非直連 SSE）；重開 editor |
-| SSE 沒在跑 | 跑安裝目錄 `start-vault-sse.ps1`，或重新登入（開機自啟） |
-| 剛開機連不上 | SSE 首次啟動載模型約 30 秒，稍等再開 editor |
-| 殘留多個 vault-mcp 進程 | 新版已修 bridge 自動退出；仍有的話關閉所有 vault-mcp 再重啟 |
-| 升級後工具一用就崩 | 新版會自動偵測索引不相容並重建；舊版需 `vault-mcp.exe --reindex` |
+| SSE server 正在跑 | 自動橋接，成為它的 stdio proxy |
+| SSE 沒跑，也沒有其他 stdio 實例 | 直接起 stdio server |
+| SSE 沒跑，但已有 stdio 實例 | 靜默退出，不搶 SQLite |
+
+## 6. 產出的執行檔
+
+| 執行檔 | 用途 |
+|--------|------|
+| `vault-cli.exe` | 互動式 CLI（雙擊啟動） |
+| `vault-mcp.exe` | MCP server；編輯器指向這個。加 `--mode api` 則轉為 SSE 常駐 |
+| `vault-scheduler.exe` | 獨立排程守護（一般不需要，SSE 模式已內嵌） |
+
+## 7. 自動更新
+
+啟動時會檢查新版。有更新時會提示，按下後自動下載並安裝，完成／失敗都會跳通知。
+
+不想更新：`vault-cli --dismiss-update`。
+
+## 8. 常見問題
+
+**Q：更新後我改過的設定不見了？**
+不會。引擎擁有的檔案是唯讀投影、會被重生；你自己的筆記與設定受
+provenance 閘門保護——沒有「這是引擎放的」基線，一律保留你的版本。
+
+**Q：搜尋不到剛寫的筆記？**
+用編輯器以外的方式（Obsidian、檔案總管）改過檔案後，呼叫一次 `sync_vault`。
+
+**Q：想知道某個檔案歸誰管？**
+`vault_doctor(action="ownership")`；懷疑被改壞用 `vault_doctor(action="reconcile")`。
+
+**Q：怎麼知道這版改了什麼？**
+看該版 Release 頁面的說明，內容取自 CHANGELOG。
 
 ---
 
-原始碼 / 開發 / Docker / 完整架構：<https://github.com/gabrielchen0314/AI-Memory-Vault>
+<sub>問題回報請到主 repo 的 Issues。</sub>
