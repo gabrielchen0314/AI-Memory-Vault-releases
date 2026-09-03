@@ -1,7 +1,7 @@
 {
-    "version":  "4.7.3",
-    "installer":  "AI-Memory-Vault-Setup-v4.7.3.exe",
-    "sha256":  "42471bef2ff36646fe91b8383a81744a214810d6730345cffe3d922a11298d45",
-    "download_url":  "https://github.com/gabrielchen0314/AI-Memory-Vault-releases/releases/download/v4.7.3/AI-Memory-Vault-Setup-v4.7.3.exe",
-    "published":  "2026-08-27T16:53:58Z"
+    "version":  "4.7.5",
+    "installer":  "AI-Memory-Vault-Setup-v4.7.5.exe",
+    "sha256":  "84f90c892384f3c0ce0e8042d2d3dd628ff7e506a748c86403c11059900e6c03",
+    "download_url":  "https://github.com/gabrielchen0314/AI-Memory-Vault-releases/releases/download/v4.7.5/AI-Memory-Vault-Setup-v4.7.5.exe",
+    "published":  "2026-09-03T08:32:57Z"
 }
