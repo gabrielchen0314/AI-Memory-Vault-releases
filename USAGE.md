@@ -159,6 +159,13 @@ provenance 閘門保護——沒有「這是引擎放的」基線，一律保留
 若它停在幾小時前，代表看護排程根本沒在跑——照上面第 5 節重新註冊。
 若它是新的，改看同目錄的 `sse-watchdog.log` 與 `sse-server.log`。
 
+**Q：`netstat` 看得到 8765 在聽，為什麼還是連不上？**
+那是「行程活著、但已經不回話」——v4.11.1 修掉的就是這種。
+任何只做 TCP 連線的檢查都會說它健康，要真的送一個請求進去才知道：
+`curl http://127.0.0.1:8765/version`（沒回應就是它）。
+看護每 5 分鐘會自己處理；想立刻解決就手動跑一次
+`& "C:\Program Files\AI Memory Vault\vault-sse-watchdog.ps1"`。
+
 **Q：怎麼知道這版改了什麼？**
 看該版 Release 頁面的說明，內容取自 CHANGELOG。
 
