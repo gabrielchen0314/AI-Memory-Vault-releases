@@ -105,6 +105,29 @@ Claude Desktop / Codex 這類只講 stdio 的客戶端**不用改設定**——
 | SSE 沒跑，也沒有其他 stdio 實例 | 直接起 stdio server |
 | SSE 沒跑，但已有 stdio 實例 | 靜默退出，不搶 SQLite |
 
+### 讓它死掉時自己回來（v4.11.0 起，建議裝）
+
+常駐 server 一死，每個編輯器會同時顯示「斷線」。裝上兩支排程就不用管它：
+
+```powershell
+& "C:\Program Files\AI Memory Vault\scripts\register-sse-autostart.ps1"
+```
+
+| 排程 | 觸發 | 管什麼 |
+|---|---|---|
+| `Vault-SseServer-AtLogon` | 登入時 | 開機後有 server |
+| `Vault-SseServer-Watchdog` | 每 5 分鐘 | 死了會自己回來 |
+
+安裝精靈若勾了「開機自動啟動」，這兩支會自動裝好，不必手動跑。
+
+> 為什麼看護那支重要：server 有可能「行程還活著、但已經不接受連線」——
+> 這種狀態下 log 是綠的、工作管理員看得到行程，只有編輯器連不上。
+> v4.11.0 起 server 會在偵測到這種狀態時主動退出，讓看護排程把它換成一個健康的。
+
+出問題時看這兩個檔（都在 `%APPDATA%\AI-Memory-Vault\`）：
+`sse-watchdog.log`（看護每次出手的紀錄；健康時不寫）、
+`sse-watchdog-heartbeat.txt`（心跳時間戳，用來分辨「沒出事」與「排程根本沒跑」）。
+
 ## 6. 產出的執行檔
 
 | 執行檔 | 用途 |
@@ -130,6 +153,11 @@ provenance 閘門保護——沒有「這是引擎放的」基線，一律保留
 
 **Q：想知道某個檔案歸誰管？**
 `vault_doctor(action="ownership")`；懷疑被改壞用 `vault_doctor(action="reconcile")`。
+
+**Q：編輯器一直說 Vault 斷線？**
+先看 `%APPDATA%\AI-Memory-Vault\sse-watchdog-heartbeat.txt` 的時間戳。
+若它停在幾小時前，代表看護排程根本沒在跑——照上面第 5 節重新註冊。
+若它是新的，改看同目錄的 `sse-watchdog.log` 與 `sse-server.log`。
 
 **Q：怎麼知道這版改了什麼？**
 看該版 Release 頁面的說明，內容取自 CHANGELOG。
